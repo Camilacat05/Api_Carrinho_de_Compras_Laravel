@@ -1,0 +1,145 @@
+PHP LARAVEL
+
+**toda vez que criar um novo Controller, nunca esquecer de importar ele nas routes - api.php ou web.php
+
+php -S localhost:8000 -t public public/index.php  "PARA CARREGAR O SITE NA PORTA 8000, UMA ADAPTAÇAO DO PHP ARTISAN SERVER"
+
+criar projeto em laravel 
+*composer create-project --prefer-dist laravel/laravel nome_projeto 
+** composer install (dentro da pasta do projeto)
+php artisan make:migration criar_tabela_alunos --create=aluno  (cria a tabela e o nome da tabela)
+php artisan migrate:refresh  depois de atualizar um novo campo, atualiza a tabela
+ criar o model
+**php artisan make:model product
+
+Estrutura das rotas 
+ROUTE::get($uri,$callback) toda rota é composta pelo o caminho e a função que irá ser executada
+
+$fillable são para os campos alteraveis que recebem requisição
+->nulllable(); isto significa que mesmo que não insira as informações ou esteja vazio, ele vai deixar passar, 
+pois vai receber valores nulos
+
+
+php artisan make:controller Code/StoreController --api "cria todo o controller com a estrutura necessária de uma api""
+
+php artisan migrate ** cria automaticamente no banco as colunas e tabelas definidas na migração e no model
+
+para pegar uma informação do header do postman $data = $request->header('empresa');
+
+para listar todas as rotas que existem na api ** php artisan route:list
+
+
+**** jwt laravel no google  para autenticação
+
+composer require tymon/jwt-auth ** para instalar a biblioteca e os recursos de token e segurança no projeto, tokeirizar
+
+Tymon\JWTAuth\Providers\LaravelServiceProvider::class, **colocar essa linha em config->app.php-> na tag providers
+
+php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider" ** para aplicar a configuração, rodar no terminal
+
+
+php artisan jwt:secret ** coloca no terminal e aí vai gerar uma chave no arquivo .env do projeto
+
+
+
+pra inserir o password no phpmyadmin que o laravel e jwt reconhece, tem que converter a senha para bcrypt 
+https://bcrypt-generator.com/
+coloca a senha e gera o bcrypt e insere no campo password da tabela no phpmyadmin
+
+
+**jwt customizando
+
+para o token retornar dados 
+
+na classe User é alterada esta função 
+
+public function getJWTCustomClaims()
+    {
+        return [];
+    }
+}
+
+pra traduzir o token colocar no google (base64decode.org)
+
+
+**Proteger as rotas ( para apenas os usuarios autenticados ter acesso aos dados) 
+
+api.php antes 
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'v1'
+], function ($router){
+Route::post('login', [AuthController::class,'login']);  
+Route::get('store',[StoreController::class,'index']);
+Route::post('store',[StoreController::class,'store']);
+Route::put('store/{id}',[StoreController::class,'update']);
+Route::delete('store/{id}',[StoreController::class,'destroy']);
+}); 
+
+
+processo para verificação 
+ api.php depois
+
+Route::group([
+    'middleware' => ['jwt.verify'],
+    'prefix' => 'v1'
+], function ($router){
+Route::post('login', [AuthController::class,'login']);  
+Route::get('store',[StoreController::class,'index']);
+Route::post('store',[StoreController::class,'store']);
+Route::put('store/{id}',[StoreController::class,'update']);
+Route::delete('store/{id}',[StoreController::class,'destroy']);
+});
+
+
+
+
+ir em app->Http-> Middleware (criar arquivo dentro com o nome JwtMiddleware.php)
+Dentro do arquivo tem a validação para verificar a existÊncia do token e o tempo de validação
+depois ir em Middleware->Kernel.php  e apontar pro arquivo e para proteger a rota 
+colocando o caminho da classe dentro de protected $routeMiddleware utilizando a mesma variavel que coloca na rota do middleware em api.php
+'jwt.verify' => caminho da class JWTMiddleware.
+
+
+**validação dos dados
+
+$validation = \Validator::make($request->all(),[
+            'cnpj' => 'require'
+        ]);
+        if ($validation->fails()) {
+            return response()->json([$validation->errors()], 422);
+        }
+
+pega todos os dados do cadastro e está validando o CNPJ, o cadastro só é efetuado com o preenchimento do cnpj
+
+comando para baixar as mensagens de validação em portugues
+
+*composer require lucascudo/laravel-pt-br-localization --dev
+
+publicando as traduções
+
+*php artisan vendor:publish --tag=laravel-pt-br-localization
+
+depois ir em config/app.php
+mudar locale =>  pt-br
+
+** Criando validação com arquivo separado (forma correta usual )
+
+Boas práticas
+dentro da pasta Core que nós criamos, o núcleo do projeto, criar o arquivo de validação dentro
+
+*php artisan make:request Core/StoreRequest   é o arquivo de validação da classe Store
+também foi criada a Access/UserResquest
+A pasta Request é onde fica os arquivos da validação 
+
+
+* 
+
+**SEEDER
+
+php artisan make:seeder UserSeeder
+
+php artisan db:seed
+
+php artisan db:seed --class=UserSeeder " executando seeders de apenas a classe UserSeed"
